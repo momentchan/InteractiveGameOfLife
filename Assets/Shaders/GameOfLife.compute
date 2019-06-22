@@ -1,0 +1,65 @@
+﻿// GameOfLife rules
+// 1. Any live cell with fewer than 2 live neighbors dies.
+// 2. Any live cell with two or three live neighbors, lives on to the next generation.
+// 3. Any live cell with more than 3 neighbors dies
+// 4. Any died cell with exact 3 live neighbors becomes a live cell
+
+#pragma kernel GameOfLife
+
+float Width;
+float Height;
+sampler2D Input;
+
+RWTexture2D<float4> Result;
+
+[numthreads(8,8,1)]
+void GameOfLife (uint3 id : SV_DispatchThreadID)
+{
+    // TODO: insert actual code here!
+    float2 position = float2((id.x) / Width, (id.y) / Height);
+    float2 pixelSize = float2(1.0 / Width, 1.0 / Height);
+    
+    float4 currentPixel = tex2Dlod(Input, float4(position.x, position.y, 0, 0));
+    
+    float4 neighborPixel = float4(0,0,0,0);
+    
+    neighborPixel += tex2Dlod(Input, float4(position.x + pixelSize.x, position.y + pixelSize.y, 0, 0));
+    neighborPixel += tex2Dlod(Input, float4(position.x              , position.y + pixelSize.y, 0, 0));
+    neighborPixel += tex2Dlod(Input, float4(position.x - pixelSize.x, position.y + pixelSize.y, 0, 0));
+    
+    neighborPixel += tex2Dlod(Input, float4(position.x + pixelSize.x, position.y, 0, 0));
+    neighborPixel += tex2Dlod(Input, float4(position.x - pixelSize.x, position.y, 0, 0));
+    
+    neighborPixel += tex2Dlod(Input, float4(position.x + pixelSize.x, position.y - pixelSize.y, 0, 0));
+    neighborPixel += tex2Dlod(Input, float4(position.x              , position.y - pixelSize.y, 0, 0));
+    neighborPixel += tex2Dlod(Input, float4(position.x - pixelSize.x, position.y - pixelSize.y, 0, 0));
+    
+    //neighborPixel += currentPixel;
+    
+    
+    // live cell
+    if(currentPixel.r > 0.1)
+    {
+        if(neighborPixel.r > 1.5 && neighborPixel.r < 3.5) // Between 2 and 3 live neighbors 
+        {
+            Result[id.xy] = float4(1,1,1,1);  
+        }
+        else
+        {
+            Result[id.xy] = float4(0,0,0,1);
+        }
+    
+    }
+    // dead cell
+    else
+    {
+        if(neighborPixel.r > 2.5 && neighborPixel.r < 3.5) // Exactly 3 live neighbors
+        {
+            Result[id.xy] = float4(1,1,1,1);  
+        }
+        else
+        {
+            Result[id.xy] = float4(0,0,0,1);
+          }
+    }
+}
